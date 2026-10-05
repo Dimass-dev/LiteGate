@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/LiteGate.DemoUpstream/LiteGate.DemoUpstream.csproj" />
     <Project Path="src/LiteGate.Gateway/LiteGate.Gateway.csproj" />
   </Folder>
 </Solution>
