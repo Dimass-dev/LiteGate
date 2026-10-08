@@ -2,6 +2,7 @@ using LiteGate.Gateway.Caching;
 using LiteGate.Gateway.Configuration;
 using LiteGate.Gateway.Observability;
 using LiteGate.Gateway.Proxy;
+using LiteGate.Gateway.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ builder.Services.AddMemoryCache(memoryCacheOptions =>
     memoryCacheOptions.SizeLimit = gatewayOptions.Cache.MaxStoreBytes;
 });
 builder.Services.AddSingleton<IResponseCache, MemoryResponseCache>();
+builder.Services.AddSingleton<ClientRateLimiter>();
+builder.Services.AddHostedService(static serviceProvider => serviceProvider.GetRequiredService<ClientRateLimiter>());
+builder.Services.AddSingleton<ClientIpResolver>();
 builder.Services.AddSingleton<HttpMessageHandler>(_ => new SocketsHttpHandler
 {
     PooledConnectionLifetime = TimeSpan.FromMinutes(1),
@@ -23,6 +27,7 @@ var app = builder.Build();
 
 app.UseRouting();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 app.UseMiddleware<ResponseCacheMiddleware>();
 app.UseMiddleware<ReverseProxyMiddleware>();
 
