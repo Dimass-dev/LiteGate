@@ -13,6 +13,7 @@ public sealed class ResponseCacheMiddleware(
     RequestDelegate next,
     IResponseCache cache,
     TimeProvider timeProvider,
+    GatewayMetrics metrics,
     IOptions<GatewayOptions> options,
     ILogger<ResponseCacheMiddleware> logger)
 {
@@ -46,6 +47,7 @@ public sealed class ResponseCacheMiddleware(
 
         if (cached is not null)
         {
+            metrics.IncrementCacheHit();
             tracker.CacheHit = true;
             logger.LogDebug(
                 "Cache hit for {Method} {Path} (age {AgeSeconds} s)",
@@ -57,6 +59,7 @@ public sealed class ResponseCacheMiddleware(
         }
 
         context.Response.Headers["X-Cache"] = "MISS";
+        metrics.IncrementCacheMiss();
         var originalBody = context.Response.Body;
         var bufferingStream = new ResponseBufferingStream(originalBody, gatewayOptions.Cache.MaxCacheableBodyBytes);
         context.Response.Body = bufferingStream;

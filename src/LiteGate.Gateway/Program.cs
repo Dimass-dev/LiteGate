@@ -14,6 +14,7 @@ builder.Services.AddMemoryCache(memoryCacheOptions =>
     memoryCacheOptions.SizeLimit = gatewayOptions.Cache.MaxStoreBytes;
 });
 builder.Services.AddSingleton<IResponseCache, MemoryResponseCache>();
+builder.Services.AddSingleton<GatewayMetrics>();
 builder.Services.AddSingleton<ClientRateLimiter>();
 builder.Services.AddHostedService(static serviceProvider => serviceProvider.GetRequiredService<ClientRateLimiter>());
 builder.Services.AddSingleton<ClientIpResolver>();
@@ -32,6 +33,7 @@ app.UseMiddleware<ResponseCacheMiddleware>();
 app.UseMiddleware<ReverseProxyMiddleware>();
 
 app.MapGet("/_health", () => Results.Ok(new { status = "healthy", service = "LiteGate" }));
+app.MapGet("/_metrics", (GatewayMetrics metrics) => Results.Json(metrics.Snapshot()));
 
 app.Run();
 

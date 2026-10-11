@@ -1,4 +1,5 @@
 using LiteGate.Gateway.Configuration;
+using LiteGate.Gateway.Observability;
 using Microsoft.Extensions.Options;
 
 namespace LiteGate.Gateway.Proxy;
@@ -6,6 +7,7 @@ namespace LiteGate.Gateway.Proxy;
 /// <summary>Forwards incoming requests to the configured upstream and streams the response back.</summary>
 public sealed class UpstreamForwarder(
     HttpMessageHandler handler,
+    GatewayMetrics metrics,
     IOptions<GatewayOptions> options,
     ILogger<UpstreamForwarder> logger)
 {
@@ -32,6 +34,7 @@ public sealed class UpstreamForwarder(
         }
         catch (TaskCanceledException)
         {
+            metrics.IncrementUpstreamError();
             logger.LogError(
                 "Upstream request timed out for {Method} {Path} after {TimeoutSeconds} s",
                 context.Request.Method,
@@ -42,6 +45,7 @@ public sealed class UpstreamForwarder(
         }
         catch (HttpRequestException exception)
         {
+            metrics.IncrementUpstreamError();
             logger.LogError(
                 exception,
                 "Upstream request failed for {Method} {Path}",

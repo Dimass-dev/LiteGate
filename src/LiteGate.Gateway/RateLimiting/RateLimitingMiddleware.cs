@@ -11,6 +11,7 @@ public sealed class RateLimitingMiddleware(
     RequestDelegate next,
     ClientRateLimiter rateLimiter,
     ClientIpResolver clientIpResolver,
+    GatewayMetrics metrics,
     IOptions<GatewayOptions> options,
     ILogger<RateLimitingMiddleware> logger)
 {
@@ -44,6 +45,7 @@ public sealed class RateLimitingMiddleware(
         }
 
         tracker.Throttled = true;
+        metrics.IncrementThrottled();
         var retryAfterSeconds = Math.Max(1, (int)Math.Ceiling(decision.State.RetryAfter.TotalSeconds));
         logger.LogWarning(
             "Rate limit exceeded for {ClientIp} on {Method} {Path}; retry after {RetryAfterSeconds} s",

@@ -6,6 +6,7 @@ namespace LiteGate.Gateway.Observability;
 /// </summary>
 public sealed class RequestLoggingMiddleware(
     RequestDelegate next,
+    GatewayMetrics metrics,
     ILoggerFactory loggerFactory,
     ILogger<RequestLoggingMiddleware> logger)
 {
@@ -38,6 +39,7 @@ public sealed class RequestLoggingMiddleware(
         finally
         {
             var tracker = context.GetStageTracker();
+            metrics.RecordRequest(context.Response.StatusCode, tracker.TotalMs);
             logger.LogInformation(
                 "Gateway request {TraceId} {Method} {Path} responded {StatusCode} in {TotalMs} ms (cacheHit={CacheHit}, throttled={Throttled}) | stages: rateLimit={RateLimitMs} ms, cacheLookup={CacheLookupMs} ms, cacheStore={CacheStoreMs} ms, upstream={UpstreamMs} ms",
                 traceId,
