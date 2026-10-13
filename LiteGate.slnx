@@ -3,4 +3,7 @@
     <Project Path="src/LiteGate.DemoUpstream/LiteGate.DemoUpstream.csproj" />
     <Project Path="src/LiteGate.Gateway/LiteGate.Gateway.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LiteGate.Tests/LiteGate.Tests.csproj" />
+  </Folder>
 </Solution>
