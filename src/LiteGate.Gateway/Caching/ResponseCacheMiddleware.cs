@@ -20,6 +20,10 @@ public sealed class ResponseCacheMiddleware(
     private static readonly string[] ExcludedFromCacheHeaders =
     [
         "Date", "Age", "X-Cache", "X-Trace-Id", "Content-Length",
+        // Transport framing / connection-scoped headers must never be replayed from cache:
+        // Kestrel surfaces "Transfer-Encoding: chunked" in the headers collection once a
+        // chunked response has started, and copying it back corrupts the HIT response framing.
+        "Transfer-Encoding", "Connection", "Keep-Alive", "Upgrade",
     ];
 
     public async Task InvokeAsync(HttpContext context)
