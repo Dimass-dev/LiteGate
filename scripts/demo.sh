@@ -4,10 +4,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+UPSTREAM_LOG="$ROOT/.demo-upstream.log"
+GATEWAY_LOG="$ROOT/.demo-gateway.log"
 
-dotnet run --project "$ROOT/src/LiteGate.DemoUpstream" --no-build --urls http://localhost:5100 &
+dotnet run --project "$ROOT/src/LiteGate.DemoUpstream" --no-build --urls http://localhost:5100 >"$UPSTREAM_LOG" 2>&1 &
 UPSTREAM_PID=$!
-dotnet run --project "$ROOT/src/LiteGate.Gateway" --no-build --urls http://localhost:5080 &
+dotnet run --project "$ROOT/src/LiteGate.Gateway" --no-build --urls http://localhost:5080 >"$GATEWAY_LOG" 2>&1 &
 GATEWAY_PID=$!
 
 cleanup() { kill "$UPSTREAM_PID" "$GATEWAY_PID" 2>/dev/null || true; }
@@ -19,6 +21,8 @@ wait_for() {
     sleep 1
   done
   echo "Service did not start: $1" >&2
+  echo "--- last upstream log lines ---" >&2; tail -5 "$UPSTREAM_LOG" >&2
+  echo "--- last gateway log lines ---" >&2; tail -5 "$GATEWAY_LOG" >&2
   exit 1
 }
 
@@ -37,9 +41,11 @@ curl -s http://localhost:5080/api/no-store
 curl -s http://localhost:5080/api/no-store
 echo
 echo "== Burst to trigger rate limiting (status codes) =="
+BURST_ARGS=""
 for _ in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code} " http://localhost:5080/api/no-store
+  BURST_ARGS="$BURST_ARGS -o /dev/null http://localhost:5080/api/no-store"
 done
+curl -s -w "%{http_code} " $BURST_ARGS
 echo
 echo "== Metrics =="
 curl -s http://localhost:5080/_metrics
